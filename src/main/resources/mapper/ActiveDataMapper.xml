@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="com.demo.mapper.ActiveDataMapper">
+
+    <select id="queryDayCount" resultType="ActiveTotalData">
+        SELECT @rownum as title,SUM(day_count) totalData FROM (SELECT @rownum:='日活') r,ads_uv_count WHERE DATE_SUB(#{thisEntryDate}, INTERVAL 9 DAY) &lt;= date(dt) AND dt &lt;= #{thisEntryDate}
+    </select>
+    <select id="queryDay" resultType="ActiveData">
+        SELECT dt date,day_count activeCount FROM ads_uv_count WHERE DATE_SUB(#{thisEntryDate}, INTERVAL 9 DAY) &lt;= date(dt) AND dt &lt;= #{thisEntryDate}
+    </select>
+
+    <select id="queryWkCount" resultType="ActiveTotalData">
+        SELECT @rownum title,SUM(a.wk_count) totalData from (SELECT @rownum:='周活') r,(SELECT * FROM ads_uv_count WHERE is_weekend = 'Y' AND dt &lt;= #{thisEntryDate} ORDER BY dt desc limit 9) a
+    </select>
+    <select id="queryWk" resultType="ActiveData">
+        SELECT dt date,wk_count activeCount from (SELECT * FROM ads_uv_count WHERE is_weekend = 'Y' AND dt &lt;= #{thisEntryDate} ORDER BY dt desc limit 9) a
+    </select>
+
+    <select id="queryMonCount" resultType="ActiveTotalData">
+        SELECT @rownum title,SUM(a.mn_count) totalData from (SELECT @rownum:='月活') r,(SELECT * FROM ads_uv_count WHERE is_monthend = 'Y' AND dt &lt;= #{thisEntryDate} ORDER BY dt desc limit 12) a
+    </select>
+    <select id="queryMon" resultType="ActiveData">
+        SELECT dt date,mn_count activeCount from (SELECT * FROM ads_uv_count WHERE is_monthend = 'Y' AND dt &lt;= #{thisEntryDate} ORDER BY dt desc limit 12) a
+    </select>
+
+
+    <select id="queryRetainData" resultType="RetainData">
+        select stat_date,
+        max(case DATE_FORMAT(stat_date, "%Y-%m-%d") when DATE_FORMAT(create_date, "%Y-%m-%d") then new_mid_count else 0 end) new_mid_count,
+        max(case retention_day when 1 then retention_ratio else 0 end) d1,
+        max(case retention_day when 2 then retention_ratio else 0 end) d2,
+        max(case retention_day when 3 then retention_ratio else 0 end) d3,
+        max(case retention_day when 4 then retention_ratio else 0 end) d4,
+        max(case retention_day when 5 then retention_ratio else 0 end) d5,
+        max(case retention_day when 6 then retention_ratio else 0 end) d6
+        from ads_user_retention_day_rate
+        group by DATE_FORMAT(stat_date, "%Y-%m-%d")
+    </select>
+    <!--select concat(date_format(dt,'%Y'),'Q' ,FLOOR((date_format(dt,'%m')+2)/3)) `quarter`,sum(gmv_count) gmv_count,sum(gmv_amount) gmv_amount from ads_gmv_sum_day group by concat(date_format(dt,'%Y'),FLOOR((date_format(dt,'%m')+2)/3)) ORDER BY concat(date_format(dt,'%Y'),FLOOR((date_format(dt,'%m')+2)/3));-->
+    <select id="queryGMVOrder" resultType="GMVOrder">
+        select date_format(dt,'%Y-%m-%s') `quarter`,gmv_count gmv_count,gmv_amount gmv_amount from ads_gmv_sum_day ORDER BY date_format(dt,'%Y-%m-%s');
+    </select>
+    <select id="queryMapData" resultType="MapData">
+        SELECT province name,gmv value,remark remark FROM ads_gmv_sum_province
+    </select>
+    <select id="queryConvertData" resultType="ConvertData">
+        SELECT * FROM ads_user_action_convert_day WHERE date_format(dt,'%Y-%m-%d')=#{tag}
+    </select>
+
+</mapper>
